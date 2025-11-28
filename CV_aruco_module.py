@@ -7,6 +7,37 @@ import math
 # Real-world coordinates of the 8 corners of the aruco markers
 # Order must match the corner order from ArUco: TL, TR, BR, BL.
 # Top-left marker 
+# pts_world_TL = np.array([
+#     [-6.5, -6.5],   # top-left
+#     [ 0.0, -6.5],   # top-right
+#     [ 0.0,  0.0],   # bottom-right
+#     [-6.5,  0.0],   # bottom-left
+# ], dtype=np.float32)
+
+# # Top-right marker 
+# pts_world_TR = np.array([
+#     [44.0, -6.5],   # top-left
+#     [51.0, -6.5],   # top-right
+#     [51.0,  0.0],   # bottom-right
+#     [44.0,  0.0],   # bottom-left
+# ], dtype=np.float32)
+
+# # Bottom-right marker
+# pts_world_BR = np.array([
+#     [44.0, 28.0],   # top-left
+#     [51.0, 28.0],   # top-right
+#     [51.0, 35.0],   # bottom-right
+#     [44.0, 35.0],   # bottom-left
+# ], dtype=np.float32)
+
+# # Bottom-left marker
+# pts_world_BL = np.array([
+#     [-6.5, 28.0],   # top-left
+#     [0.0, 28.0],   # top-right
+#     [0.0, 35.0],   # bottom-right
+#     [-6.5, 35.0],   # bottom-left
+# ], dtype=np.float32)
+
 pts_world_TL = np.array([
     [-6.5, -6.5],   # top-left
     [ 0.0, -6.5],   # top-right
@@ -16,26 +47,26 @@ pts_world_TL = np.array([
 
 # Top-right marker 
 pts_world_TR = np.array([
-    [44.0, -6.5],   # top-left
-    [51.0, -6.5],   # top-right
-    [51.0,  0.0],   # bottom-right
-    [44.0,  0.0],   # bottom-left
+    [827.0, -6.5],   # top-left
+    [833.5, -6.5],   # top-right
+    [833.5,  0.0],   # bottom-right
+    [827.0,  0.0],   # bottom-left
 ], dtype=np.float32)
 
 # Bottom-right marker
 pts_world_BR = np.array([
-    [44.0, 28.0],   # top-left
-    [51.0, 28.0],   # top-right
-    [51.0, 35.0],   # bottom-right
-    [44.0, 35.0],   # bottom-left
+    [833.5, 884.5],   # top-left
+    [840.0, 884.5],   # top-right
+    [840.0, 891.0],   # bottom-right
+    [833.5, 891.0],   # bottom-left
 ], dtype=np.float32)
 
 # Bottom-left marker
 pts_world_BL = np.array([
-    [-6.5, 28.0],   # top-left
-    [0.0, 28.0],   # top-right
-    [0.0, 35.0],   # bottom-right
-    [-6.5, 35.0],   # bottom-left
+    [-6.5, 884.5],   # top-left
+    [0.0, 884.5],   # top-right
+    [0.0, 891.0],   # bottom-right
+    [-6.5, 891.0],   # bottom-left
 ], dtype=np.float32)
 
 pts_world = np.vstack([pts_world_TL,pts_world_TR, pts_world_BR,pts_world_BL])     # shape (8,2)
