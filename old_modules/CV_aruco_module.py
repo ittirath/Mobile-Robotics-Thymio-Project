@@ -72,9 +72,11 @@ pts_world_BL = np.array([
 pts_world = np.vstack([pts_world_TL,pts_world_TR, pts_world_BR,pts_world_BL])     # shape (8,2)
 
 # ArUco dictionary (DICT_4X4_50) 
-aruco_dict = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_50)
-aruco_params = cv2.aruco.DetectorParameters() 
+# aruco_dict = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_50)
+# aruco_params = cv2.aruco.DetectorParameters() 
 
+dictionary = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_50)
+detector_params = cv2.aruco.DetectorParameters()
 # ---------------- functions used for CV ----------------
 
 # Compute center of the ArUco marker 
@@ -200,13 +202,16 @@ def get_pose_from_frame(frame, only_thymio=False):
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)  # gray is an array of shape (height, width, 1) type uint8
 
     # Detect markers
-    corners, ids, _ = cv2.aruco.detectMarkers(gray, aruco_dict, parameters=aruco_params)
+    # corners, ids, _ = cv2.aruco.detectMarkers(gray, aruco_dict, parameters=aruco_params)
+    detector = cv2.aruco.ArucoDetector(dictionary, detector_params)
+    corners, ids, rejected = detector.detectMarkers(gray)
+
 
     # Initialize outputs
     thymio_start = thymio_theta = goal = polygons_real_world = H = None
 
     # ---------------- Marker detection and map definition ----------------
-    if len(ids) >= 6: # all markers must be detected
+    if ids is not None and len(ids) >= 6: # all markers must be detected
 
         # 0: TL, 1: TR, 2: BR, 3: BL, 4: thymio, 5: goal
         marker0_TL = marker1_TR = marker2_BR = marker3_BL = marker4_thymio = marker5_goal = 0
