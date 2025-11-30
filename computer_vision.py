@@ -277,26 +277,27 @@ def get_pose_from_frame(frame, only_thymio=False):
 
     # 0: TL, 1: TR, 2: BR, 3: BL, 4: thymio, 5: goal
     marker0_TL = marker1_TR = marker2_BR = marker3_BL = marker4_thymio = marker5_goal = None
-
-    ids_flat = ids.flatten()
-    for i, marker_id in enumerate(ids_flat):
-        if marker_id == 0:
-            marker0_TL = i
-        elif marker_id == 1:
-            marker1_TR = i
-        elif marker_id == 2:
-            marker2_BR = i
-        elif marker_id == 3:
-            marker3_BL = i
-        elif marker_id == 4:
-            marker4_thymio = i
-        elif marker_id == 5:
-            marker5_goal = i
-    essential_markers_detected = (marker0_TL is not None) and (marker1_TR is not None) and \
-                                 (marker2_BR is not None) and (marker3_BL is not None) and (marker4_thymio is not None) 
-
+    if ids is not None:
+        ids_flat = ids.flatten()
+        for i, marker_id in enumerate(ids_flat):
+            if marker_id == 0:
+                marker0_TL = i
+            elif marker_id == 1:
+                marker1_TR = i
+            elif marker_id == 2:
+                marker2_BR = i
+            elif marker_id == 3:
+                marker3_BL = i
+            elif marker_id == 4:
+                marker4_thymio = i
+            elif marker_id == 5:
+                marker5_goal = i
+        essential_markers_detected = (marker0_TL is not None) and (marker1_TR is not None) and \
+                                    (marker2_BR is not None) and (marker3_BL is not None) and (marker4_thymio is not None) 
+    else:
+        essential_markers_detected = False
     # ---------------- Marker detection and map definition ----------------
-    if ids is not None and essential_markers_detected: #
+    if essential_markers_detected: 
 
         # 0: TL, 1: TR, 2: BR, 3: BL, 4: thymio, 5: goal
         marker0_TL = marker1_TR = marker2_BR = marker3_BL = marker4_thymio = marker5_goal = None

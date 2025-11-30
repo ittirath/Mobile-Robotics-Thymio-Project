@@ -27,10 +27,7 @@ X_array = [] # vector state logging over time
 X_camera_array = [] # vector state from camera logging over time
 X = None
 P = np.array([[var_x_cam,0,0],[0,var_y_cam,0],[0,0,var_theta_cam]])
-
-prox_values = None
-timer_start = 0
-previous_wall_side = None 
+prox_values = np.array([0,0,0,0,0,0,0])
 
 # def enter_local_navigation():
 #     reset_local_state()
@@ -42,6 +39,9 @@ while True:
     if not ret:
         print("Frame not received")
         break
+        
+    # CHECK FOR LOCAL NAVIGATION TRIGGER HERE --------------------------------------------------------------------------
+    prox_values = get_prox_sensors()
     
     if state == "GLOBAL_NAVIGATION":
         thymio_start, thymio_theta, goal, polygons_real_world, homography = get_pose_from_frame(frame, only_thymio=False)
@@ -81,8 +81,8 @@ while True:
             # X[1] = thymio_start[1]
             # X[2] = thymio_theta
             X_camera_array.append(np.array([thymio_start[0], thymio_start[1], thymio_theta]))
-            
-            
+
+
             # CHECK FOR KIDNAPPING HERE --------------------------------------------------------------------------
             if len(X_array) >= 2:
                 x_diff = X_array[-1][0] - X_array[-2][0]
@@ -95,32 +95,34 @@ while True:
                 print("Kidnapping detected")
                 state = "GLOBAL_NAVIGATION"
 
-            # CHECK FOR LOCAL NAVIGATION TRIGGER HERE --------------------------------------------------------------------------
-             # Check Obstacle
-            prox_values = get_prox_sensors()
-            if check_obstacle_trigger(prox_values):
-                local_nav_log("Obstacle detected! Switching to Local.")
-                # enter_local_navigation()
-                reset_local_state()
-                state = "LOCAL_NAVIGATION" 
-
     if state == "ROTATE":
-    
-            theta_des = np.arctan2(waypoints[1, waypoint_index]-X[1], waypoints[0, waypoint_index]-X[0])
-            delta_theta = (theta_des - X[2] + np.pi) % (2*np.pi) - np.pi
-
-            #print(f"theta_des={theta_des:.3f}, theta={X[2]:.3f}, delta={delta_theta:.3f}") # debug 
+        if check_obstacle_trigger(prox_values):
+            local_nav_log("Obstacle detected! Switching to Local.")
+            # enter_local_navigation()
+            reset_local_state()
+            state = "LOCAL_NAVIGATION"
             
-            if abs(delta_theta) < eps_theta:
-                apply_motor_commands(0, 0)
-                state = "FORWARD"
-            elif delta_theta > 0:
-                apply_motor_commands(-ROTATION_SPEED,ROTATION_SPEED)
-            else:
-                apply_motor_commands(ROTATION_SPEED, -ROTATION_SPEED)
-        
-    elif state == "FORWARD":
+        theta_des = np.arctan2(waypoints[1, waypoint_index]-X[1], waypoints[0, waypoint_index]-X[0])
+        delta_theta = (theta_des - X[2] + np.pi) % (2*np.pi) - np.pi
 
+        #print(f"theta_des={theta_des:.3f}, theta={X[2]:.3f}, delta={delta_theta:.3f}") # debug
+
+        if abs(delta_theta) < eps_theta:
+            apply_motor_commands(0, 0)
+            state = "FORWARD"
+        elif delta_theta > 0:
+            apply_motor_commands(-ROTATION_SPEED,ROTATION_SPEED)
+        else:
+            apply_motor_commands(ROTATION_SPEED, -ROTATION_SPEED)
+
+    elif state == "FORWARD":
+        # CHECK FOR LOCAL NAVIGATION TRIGGER HERE --------------------------------------------------------------------------
+        if check_obstacle_trigger(prox_values):
+            local_nav_log("Obstacle detected! Switching to Local.")
+            # enter_local_navigation()
+            reset_local_state()
+            state = "LOCAL_NAVIGATION"
+        
         x_diff = waypoints[0,waypoint_index] - X[0]
         y_diff = waypoints[1,waypoint_index] - X[1]
         dist_to_waypoint = np.linalg.norm([x_diff, y_diff])
@@ -140,18 +142,21 @@ while True:
 
     elif state == "LOCAL_NAVIGATION":
         print("State: LOCAL NAV")
-            
+
         # Logic
         left_speed, right_speed = local_nav_update(prox_values)
-        
+        print(left_speed, right_speed)
+        print(prox_values)
+
         # Act
         apply_motor_commands(left_speed, right_speed)
 
         # Exit Condition
         if current_state == "GLOBAL" and max(prox_values[:5]) < THRESH_ENTRY:
+            
             local_nav_log("Obstacle cleared. Returning to Global.")
-            stop_robot()
-            state = "GLOBAL_NAVIGATION" 
+            stop_Thymio()
+            state = "GLOBAL_NAVIGATION"
 
     if waypoints is not None and homography is not None:
         draw_global_path(frame, homography, waypoints)
