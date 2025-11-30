@@ -1,14 +1,17 @@
 import numpy as np
 
+from computer_vision import get_pose_from_frame
 from global_variables import *
 
 # KALMAN FILTER HELPER FUNCTIONS ----------------------------------------
+def wrap_to_pi(angle):
+    return (angle + np.pi) % (2 * np.pi) - np.pi
 
 def convert_thymio_int_to_speed(motor_int):
   return motor_int * 20e-2 / 500
 
 def camera_to_world(frame_size,xy,theta):
-  return [xy[0], frame_size[1] - xy[1]], -theta
+  return [xy[0]* 1e-2, frame_size[1] - xy[1]* 1e-2], -theta # convert from cm to m
 
 def motion_model(X,U,dt):
   # Returns the next pose of the Tymio robot predicted by the motion model for an inital pose X = [x[m],y[m],theta[rad]], a control U = [v_r[m/s],v_l[m/s]] and a time step dt
@@ -24,6 +27,7 @@ def motion_model(X,U,dt):
   x_plus = x + (v_r+v_l)/2 * np.cos(theta) * dt
   y_plus = y + (v_r+v_l)/2 * np.sin(theta) * dt
   theta_plus = theta + (v_r-v_l)/wheel_spacing * dt
+
 
   return np.array([x_plus,y_plus,theta_plus]).T
 
@@ -64,7 +68,7 @@ def correct_estimation(X_estim,P_estim,Z_meas):
 
   # compute Mahalanobis distance and abort correction step if the measurement is rejected
   if Y.T @ S_inv @ Y > threshold:
-    print('Measurement rejected')
+    #print('Measurement rejected') # debug
     return X_estim, P_estim
 
   K = P_estim @ S_inv
@@ -73,4 +77,30 @@ def correct_estimation(X_estim,P_estim,Z_meas):
   P_corr = (np.eye(3) - K) @ P_estim
 
   return X_corr, P_corr
+
+# KALMAN FILTER GLOBAL FUNCTIONS ----------------------------------------
+
+def update_EKF(v_r, v_l, X_old, P_old,frame):
+  # Returns the updated state vector X = [x, y, theta].T of the robot pose using the Kalman filter (combines motor speeds with camera measurements (frame variable is the camera frame))
+  # Inputs : X_old (3x1 numpy array), P_old (3x3 numpy array), frame (image_heightximage_widthx3 numpy array of uint8s)
+  # Outputs : X (3x1 numpy array), P (3x3 numpy array)
+  
+  
+  xy_cam, theta_cam = get_pose_from_frame(frame,only_thymio=True)
+  if xy_cam is None or theta_cam is None:
+    #print('No camera measurement available') # debug
+    return X_old, P_old      
+  
+  xy_cam, theta_cam = camera_to_world(frame_size, xy_cam, theta_cam) # convert from cm to m
+
+  U_sens = np.array([v_r, v_l]).T
+
+  X_estim, P_estim = estimate_next_pose(X_old, P_old, U_sens, dt) # estimation step
+
+  Z_meas = np.array([xy_cam[0], xy_cam[1], theta_cam]).T
+
+  X, P = correct_estimation(X_estim, P_estim, Z_meas) # correction step
+
+  return X, P
+
 

@@ -6,6 +6,12 @@ from global_variables import *
 
 # COMPUTER VISION HELPER FUNCTIONS ----------------------------------------
 
+def path_world_to_camera(frame_size, path_world):
+    H = frame_size[1]
+    path_cam = path_world.copy()
+    path_cam[1, :] = H - path_cam[1, :]
+    return path_cam
+
 # Compute center of the ArUco marker
 def compute_center(top_left,bottom_right):
     center_x = int((top_left[0] + bottom_right[0]) / 2.0)
@@ -134,12 +140,12 @@ def get_camera_measurement(frame, only_thymio=False, plot_view=False):
     corners, ids, rejected = detector.detectMarkers(gray)
     
     # Initialize outputs
-    thymio_start = np.array([1e8,1e8])
+    thymio_start = goal = np.array([1e8,1e8])
     thymio_theta = 0
-    goal = polygons_real_world = H = None
+    polygons_real_world = H = None
 
     # ---------------- Marker detection and map definition ----------------
-    if len(ids) >= 6: # all markers must be detected
+    if ids is not None and len(ids) >= 6: # all markers must be detected
 
         # 0: TL, 1: TR, 2: BR, 3: BL, 4: thymio, 5: goal
         marker0_TL = marker1_TR = marker2_BR = marker3_BL = marker4_thymio = marker5_goal = 0
@@ -246,3 +252,152 @@ def get_camera_measurement(frame, only_thymio=False, plot_view=False):
         return thymio_start * 1e-2, thymio_theta
     else:
         return thymio_start * 1e-2, thymio_theta, goal * 1e-2, polygons_real_world, H
+    
+
+
+def get_pose_from_frame(frame, only_thymio=False):
+    """
+    Returns:
+        thymio_x, thymio_y, thymio_theta: position (x,y) in cm and orientation theta in radians
+    If only_thymio is False then in addition to above returns:
+        goal_x, goal_y: position (x,y) in cm
+        list of (N,2) int arrays with polygon vertices in world coords
+    """
+    # Convert to grayscale (Aruco works on grayscale)
+    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)  # gray is an array of shape (height, width, 1) type uint8
+
+    # Detect markers
+    # corners, ids, _ = cv2.aruco.detectMarkers(gray, aruco_dict, parameters=aruco_params)
+    detector = cv2.aruco.ArucoDetector(dictionary, detector_params)
+    corners, ids, rejected = detector.detectMarkers(gray)
+
+
+    # Initialize outputs
+    thymio_start = thymio_theta = goal = polygons_real_world = H = None
+
+    # 0: TL, 1: TR, 2: BR, 3: BL, 4: thymio, 5: goal
+    marker0_TL = marker1_TR = marker2_BR = marker3_BL = marker4_thymio = marker5_goal = None
+
+    ids_flat = ids.flatten()
+    for i, marker_id in enumerate(ids_flat):
+        if marker_id == 0:
+            marker0_TL = i
+        elif marker_id == 1:
+            marker1_TR = i
+        elif marker_id == 2:
+            marker2_BR = i
+        elif marker_id == 3:
+            marker3_BL = i
+        elif marker_id == 4:
+            marker4_thymio = i
+        elif marker_id == 5:
+            marker5_goal = i
+    essential_markers_detected = (marker0_TL is not None) and (marker1_TR is not None) and \
+                                 (marker2_BR is not None) and (marker3_BL is not None) and (marker4_thymio is not None) 
+
+    # ---------------- Marker detection and map definition ----------------
+    if ids is not None and essential_markers_detected: #
+
+        # 0: TL, 1: TR, 2: BR, 3: BL, 4: thymio, 5: goal
+        marker0_TL = marker1_TR = marker2_BR = marker3_BL = marker4_thymio = marker5_goal = None
+    
+        ids_flat = ids.flatten()
+        for i, marker_id in enumerate(ids_flat):
+            if marker_id == 0:
+                marker0_TL = i
+            elif marker_id == 1:
+                marker1_TR = i
+            elif marker_id == 2:
+                marker2_BR = i
+            elif marker_id == 3:
+                marker3_BL = i
+            elif marker_id == 4:
+                marker4_thymio = i
+            elif marker_id == 5:
+                marker5_goal = i
+                
+        # Interior corner of each map marker (assuming OpenCV order TL=0, TR=1, BR=2, BL=3)
+        tl_pt = corners[marker0_TL][0][2]  # BR of TL marker (closest to map interior)
+        tr_pt = corners[marker1_TR][0][3]  # BL of TR marker
+        br_pt = corners[marker2_BR][0][0]  # TL of BR marker
+        bl_pt = corners[marker3_BL][0][1]  # TR of BL marker
+
+        # Four corners of the virtual map (axis aligned)
+        p_tl = (int(tl_pt[0]), int(tl_pt[1]))
+        p_br = (int(br_pt[0]), int(br_pt[1]))
+        p_tr = (int(tr_pt[0]), int(tr_pt[1]))
+        p_bl = (int(bl_pt[0]), int(bl_pt[1]))
+
+        # ---------------- Position/orientation of thymio and goal in image space ----------------
+        thymio_x_img, thymio_y_img = compute_center(
+            corners[marker4_thymio][0][0],  # TL
+            corners[marker4_thymio][0][2]   # BR
+        )
+        thymio_theta = compute_angle(
+            corners[marker4_thymio][0][0],  # TL
+            corners[marker4_thymio][0][3]   # BL
+        )
+        if marker5_goal is not None:
+            goal_x_img, goal_y_img = compute_center(
+                corners[marker5_goal][0][0],    # TL
+                corners[marker5_goal][0][2]     # BR
+            )
+
+        # ---------------- Homography: image -> world ----------------
+        # Image/pixel coordinates of the 16 corners (4 markers × 4 corners)
+        pts_img_TL = corners[marker0_TL][0].astype(np.float32)  # (4,2)
+        pts_img_TR = corners[marker1_TR][0].astype(np.float32)  # (4,2)
+        pts_img_BR = corners[marker2_BR][0].astype(np.float32)  # (4,2)
+        pts_img_BL = corners[marker3_BL][0].astype(np.float32)  # (4,2)
+
+        pts_img = np.vstack([pts_img_TL, pts_img_TR, pts_img_BR, pts_img_BL]).astype(np.float32)  # (16,2)
+
+        # Homography matrix (pts_world must be shape (16,2), matching the order above)
+        H, inliers = cv2.findHomography(pts_img, pts_world)  # method=0: DLT
+
+        # Compute position of thymio / goal / obstacles in real world (origin at top left corner of map)
+        thymio_x, thymio_y = img_to_world(thymio_x_img, thymio_y_img, H)
+        thymio_start = np.array([thymio_x, thymio_y])
+        
+        if(not only_thymio):
+            if marker5_goal is not None:
+                goal_x, goal_y = img_to_world(goal_x_img, goal_y_img, H)
+                goal = np.array([goal_x, goal_y])
+            
+            polygons_img_world = detect_red_polygons_in_map(frame, p_tl, p_br)
+
+            polygons_real_world = []
+            # Map polygon vertices to real world positions
+            for verts in polygons_img_world:  # verts: (N,2) in image coords
+                cnt = verts.reshape(-1, 1, 2).astype(np.float32)    # cv2 uses (N,1,2) format
+                cnt_world = cv2.perspectiveTransform(cnt, H)        # same as img_to_world but batched
+                polygons_real_world.append(cnt_world.reshape(-1, 2))  # list of (N,2) world coords
+            
+        #  ---------------- Display Map,Thymio,Goal,Polygons ----------------
+
+        # Draw virtual map
+        cv2.line(frame, p_tl, p_tr, (0, 0, 0), 2)
+        cv2.line(frame, p_tr, p_br, (0, 0, 0), 2)
+        cv2.line(frame, p_br, p_bl, (0, 0, 0), 2)
+        cv2.line(frame, p_bl, p_tl, (0, 0, 0), 2)
+
+        #cv2.aruco.drawDetectedMarkers(frame, corners, ids)
+
+        # # Thymio position / angle
+        putText(frame, f"{thymio_theta:.2f}", thymio_x_img, thymio_y_img)
+        putText(frame, f"({thymio_x:.2f}, {thymio_y:.2f})",thymio_x_img, thymio_y_img + 15)  # +15 to move a bit down
+
+        if(not only_thymio):
+            # Display Goal position
+            #putText(frame, f"({goal_x:.2f}, {goal_y:.2f})", goal_x_img, goal_y_img)
+            
+            # Display detected polygons in image space
+            for verts in polygons_img_world:
+                cv2.polylines(frame, [verts], True, (255, 0, 255), 2)  # connect vertices
+                for (x, y) in verts: #  verts is (N,2) where N is the number of vertices in a polygon
+                    cv2.circle(frame, (int(x), int(y)), 4, (0, 0, 255), -1)  # circle at each vertex
+
+    if only_thymio:
+        return thymio_start, thymio_theta
+    else:
+        return thymio_start, thymio_theta, goal, polygons_real_world, H

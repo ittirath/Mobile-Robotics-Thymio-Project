@@ -259,7 +259,7 @@ def dijkstra(adj, start_idx, goal_idx):
         u = prev[u]
     path.reverse()
     return path, dist
-
+    
 
 # PATH PLANNING GLOBAL FUNCTIONS ----------------------------------------
 
@@ -270,9 +270,10 @@ def get_objective_waypoints(start, goal, polygons):
   # Inputs : start (2x1 numpy array of floats), goal (2x1 numpy array of floats), polygons (Px1 numpy array of numpy array of coordinates)
   # Output : waypoints (list of N arrays of floats)
 
-
-  #inflated_polygons = [inflate_object(poly, scale_factor) for poly in polygons]
-
+  if polygons is None or len(polygons) == 0:
+      return np.array([[start[0], goal[0]],
+                       [start[1], goal[1]]])
+    
   offset = 0.0 # dont know if we need to pu it in cm
   #inflated_polygons = [offset_polygon(poly,offset) for poly in polygons]
   inflated_polygons = [inflate_object(poly, scale_factor) for poly in polygons]
@@ -315,3 +316,116 @@ def get_objective_waypoints(start, goal, polygons):
     objective_waypoints.append(points[i])
 
   return objective_waypoints
+
+
+def get_global_path(start, goal, polygons, plot=False):
+    """
+    Compute the shortest collision-free path between a start point and a goal point
+    using a visibility graph with inflated obstacle polygons.
+
+    Parameters
+    ----------
+    start : array-like of shape (2,)
+        Starting point [x, y].
+    goal : array-like of shape (2,)
+        Goal point [x, y].
+    polygons : list of ndarray
+        List of polygons; each polygon is an array of shape (M,2) with its vertices.
+    plot : bool, optional
+        If True, displays the visibility graph and highlights the shortest path.
+
+    Returns
+    -------
+    global_path : ndarray of shape (2, K) or None
+        The optimal path as two rows:
+            global_path[0, :] = x coordinates
+            global_path[1, :] = y coordinates
+        K is the number of waypoints on the shortest path.
+        Returns None if no path exists.
+    """
+        
+    if start is None or goal is None:
+        return None  
+
+    if polygons is None or len(polygons) == 0:
+        return np.array([[start[0], goal[0]],
+                         [start[1], goal[1]]])
+    
+
+    inflated_polygons = [inflate_object(poly, scale_factor) for poly in polygons]
+    polygons = inflated_polygons
+
+    poly_edges = build_poly_edges(polygons)
+    obstacle_edges = [e for poly in poly_edges for e in poly]
+
+    # Nodes: start, goal, and all polygon vertices
+    points = [start, goal] + [v for poly in polygons for v in poly]
+    n_points = len(points)
+
+    # Build graph
+    valid_edges = []            # list of [x1,y1,x2,y2] for plotting
+    adj = {i: [] for i in range(n_points)}  # adjacency list
+
+    for i in range(n_points):
+        for j in range(i + 1, n_points):
+            x1, y1 = points[i]
+            x2, y2 = points[j]
+            candidate = [x1, y1, x2, y2]
+
+            if is_valid_visibility_edge(candidate, obstacle_edges, polygons):
+                valid_edges.append(candidate)
+                w = float(np.linalg.norm(points[i] - points[j]))
+                adj[i].append((j, w))
+                adj[j].append((i, w))
+
+    # -------------------- Shortest path (Dijkstra) --------------------
+    start_idx = 0  # start
+    goal_idx  = 1  # goal
+    path_indices, dist = dijkstra(adj, start_idx, goal_idx)
+    # print("Shortest distance:", dist[goal_idx])
+    # print("Path indices:", path_indices)
+
+    # -------------------- Plot --------------------
+    if(plot == True):
+        plt.figure()
+        # Plot polygons (closed)
+        for verts in polygons:
+            xs = np.append(verts[:, 0], verts[0, 0])
+            ys = np.append(verts[:, 1], verts[0, 1])
+            plt.plot(xs, ys)
+
+        # Plot start and goal
+        plt.scatter(start[0], start[1], marker='o', color='C0')
+        plt.scatter(goal[0],  goal[1],  marker='x', color='C1')
+        plt.text(start[0] + 0.1, start[1], "start")
+        plt.text(goal[0] + 0.1,  goal[1],  "goal")
+
+        # Plot all valid visibility edges
+        for x1, y1, x2, y2 in valid_edges:
+            plt.plot([x1, x2], [y1, y2], 'g--', linewidth=0.5)
+
+    global_path = None
+    # Highlight shortest path
+    if path_indices is not None:
+        global_path = np.zeros((2, len(path_indices)))
+        for k in range(len(path_indices) - 1):
+            i = path_indices[k]
+            j = path_indices[k + 1]
+            x1, y1 = points[i]
+            x2, y2 = points[j]
+            if(plot == True):
+                plt.plot([x1, x2], [y1, y2], 'r-', linewidth=2.5)
+            # print(f"Path segment: ({x1:.2f}, {y1:.2f}) -> ({x2:.2f}, {y2:.2f})")
+            global_path[:, k] = [x1, y1]
+        global_path[:, -1] = points[path_indices[-1]] # last point
+
+    if(plot == True):
+        plt.gca().set_aspect('equal', adjustable='box')
+        plt.xlabel("x")
+        plt.ylabel("y")
+        plt.title("Visibility graph with shortest path")
+        plt.grid(True)
+        plt.gca().invert_yaxis() # match image coords with origin at top-left (y increases downward)
+        plt.savefig("navigation_path.png", dpi=200)
+
+    return global_path
