@@ -76,7 +76,13 @@ P_GAIN = 0.1
 CLEARANCE_DURATION = 1 
 TURN_DURATION = 1.2    
 
-DEBUG_PRINT = False
+DEBUG_PRINT = True
+
+current_state = "GLOBAL"
+prox_values = None
+timer_start = 0
+previous_wall_side = None
+
 
 # MOTION CONTROL VARIABLES ----------------------------------------
 N = 100

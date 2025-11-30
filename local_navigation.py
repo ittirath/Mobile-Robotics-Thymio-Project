@@ -53,6 +53,8 @@ def local_nav_update(prox_horizontal):
 
     # STATE 2: FOLLOW LEFT
     elif current_state == "FOLLOW_LEFT":
+        if DEBUG_PRINT:
+            print(f"[LOCAL_NAV] Following left")
         if front_center > THRESH_ENTRY:
             return 100, -100 
         if left_side < THRESH_WALL_LOST:
@@ -66,6 +68,8 @@ def local_nav_update(prox_horizontal):
 
     # STATE 3: FOLLOW RIGHT
     elif current_state == "FOLLOW_RIGHT":
+        if DEBUG_PRINT:
+            print(f"[LOCAL_NAV] Following right")
         if front_center > THRESH_ENTRY:
             return -100, 100 
         if right_side < THRESH_WALL_LOST:
@@ -79,6 +83,8 @@ def local_nav_update(prox_horizontal):
 
     # STATE 4: CLEARANCE
     elif current_state == "CLEARANCE":
+        if DEBUG_PRINT:
+            print(f"[LOCAL_NAV] Clearance")
         if max(front_all) > THRESH_ENTRY:
             current_state = f"FOLLOW_{previous_wall_side}"
             return 0, 0
@@ -91,6 +97,8 @@ def local_nav_update(prox_horizontal):
 
     # STATE 5: REALIGN
     elif current_state == "REALIGN_ANGLE":
+        if DEBUG_PRINT:
+            print(f"[LOCAL_NAV] Realigning angle")
         if (time.time() - timer_start) >= TURN_DURATION:
             if max(front_all) > THRESH_ENTRY:
                 local_nav_log("Obstacle still present.")
