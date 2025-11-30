@@ -51,11 +51,11 @@ dt = 0.1 # time between EKF calls [s]
 alpha = 0 # linear gain in uncertainty
 threshold = 11 # cutoff of the Mahalanobis distance for measurement outlier rejection
 
-var_v_l = 1e-2 # variance in the left wheel linear speed measurements [m2/s2]
-var_v_r = 1e-2 # variance in the right wheel linear speed measurements [m2/s2]
+var_v_l = 1 # variance in the left wheel linear speed measurements [cm2/s2]
+var_v_r = 1 # variance in the right wheel linear speed measurements [cm2/s2]
 
-var_x_cam = 1e-4 # variance in the x coordinate camera measurement [m2]
-var_y_cam = 1e-4 # variance in the y coordinate camera measurement [m2]
+var_x_cam = 0.01 # variance in the x coordinate camera measurement [cm2]
+var_y_cam = 0.01 # variance in the y coordinate camera measurement [cm2]
 var_theta_cam = 1e-2 # variance in the heading camera measurement [rad2]
 
 
@@ -99,5 +99,5 @@ K_ROT       = MAX_ROT_CMD / np.pi  # full speed at 180° error
 
 # OTHER GLOBAL VARIABLES ----------------------------------------
 frame_size = [77.0e-2,71.0e-2]
-wheel_spacing = 10e-2 # wheel spacing [m]
+wheel_spacing = 10 # wheel spacing [m]
 KIDNAPPING_THRESHOLD = 15  # threshold distance [m] to detect kidnapping

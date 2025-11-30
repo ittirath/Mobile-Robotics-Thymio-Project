@@ -24,6 +24,9 @@ theta_des = 0.0
 waypoints = None
 waypoint_index = 1 # 1 because 0 is the initial position
 X_array = [] # vector state logging over time
+X_camera_array = [] # vector state from camera logging over time
+X = None
+P = np.array([[var_x_cam,0,0],[0,var_y_cam,0],[0,0,var_theta_cam]])
 
 
 while True:
@@ -43,14 +46,15 @@ while True:
 
         waypoints = get_global_path(thymio_start, goal, polygons_real_world, plot=False)
         if waypoints is None:
-            # no path found → stop and wait
+            # no path found -> stop and wait
+            print("no path")
             apply_motor_commands(0, 0)
             cv2.imshow("Feed", frame)
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
             continue
 
-        # initialize state X 
+        # initialize state X for kalman filter
         X = np.array([thymio_start[0], thymio_start[1], thymio_theta])
         waypoint_index = 1
         state = "ROTATE"
@@ -59,17 +63,19 @@ while True:
         # ROTATE / FORWARD: only need Thymio pose (kalman should be here normally)
         thymio_start, thymio_theta = get_pose_from_frame(frame, only_thymio=True)
         if thymio_start is not None and thymio_theta is not None:
+            # UPDATE KALMAN FILTER HERE --------------------------------------------------------------------------
+            v_r_motor, v_l_motor = get_motor_speeds()
+            # X, P = update_EKF(thymio_start, thymio_theta, v_r_motor, v_l_motor, X, P, frame)
+            print(f"Kalman pose: x={X[0]:.3f} m, y={X[1]:.3f} m, theta={X[2]:.3f} rad")  # debug
+
+            X_array.append(X.copy()) # copy to avoid corruption
+            # Debug: override kalman with camera measurement
             X[0] = thymio_start[0]
             X[1] = thymio_start[1]
             X[2] = thymio_theta
+            X_camera_array.append(np.array([thymio_start[0], thymio_start[1], thymio_theta]))
             
-            # UPDATE KALMAN FILTER HERE --------------------------------------------------------------------------
-            # v_r_motor, v_l_otor = get_motor_speeds()
-            # X, P = update_EKF(v_r_motor, v_l_motor, X, P, frame)
-
-            X_array.append(X.copy()) # copy to avoid corruption
-            #print("updateX")
-
+            
             # CHECK FOR KIDNAPPING HERE --------------------------------------------------------------------------
             if len(X_array) >= 2:
                 x_diff = X_array[-1][0] - X_array[-2][0]
@@ -119,10 +125,6 @@ while True:
             apply_motor_commands(v_r, v_l)
 
     elif state == "LOCAL_NAVIGATION":
-        # v_r_motor, v_l_motor = get_motor_speeds()
-        # X, P = update_EKF(v_r_motor, v_l_motor, X, P, frame)
-        # X_array.append(X)
-
         # local nav 
         # if no obstacle switch to GLOBAL_NAVIGATION
         pass  
@@ -139,5 +141,42 @@ while True:
         time.sleep(dt - elapsed)
 
 print("Thymio reached goal")
+
 cap.release()
 cv2.destroyAllWindows()
+
+# PLOTTING THE KALMAN FILTER RESULTS ----------------------------------------
+
+X_np      = np.array(X_array)         # shape (N, 3)
+Xcam_np   = np.array(X_camera_array)  # shape (N, 3)
+t         = np.arange(len(X_np)) * dt # or np.arange(len(X_np))
+
+plt.figure(figsize=(10, 8))
+
+# x
+plt.subplot(3, 1, 1)
+plt.plot(t, X_np[:, 0],    label="EKF x")
+plt.plot(t, Xcam_np[:, 0], label="Camera x", linestyle="--")
+plt.ylabel("x")
+plt.legend()
+plt.grid(True)
+
+# y
+plt.subplot(3, 1, 2)
+plt.plot(t, X_np[:, 1],    label="EKF y")
+plt.plot(t, Xcam_np[:, 1], label="Camera y", linestyle="--")
+plt.ylabel("y")
+plt.legend()
+plt.grid(True)
+
+# theta
+plt.subplot(3, 1, 3)
+plt.plot(t, X_np[:, 2],    label="EKF theta")
+plt.plot(t, Xcam_np[:, 2], label="Camera theta", linestyle="--")
+plt.xlabel("time [s]")
+plt.ylabel("theta [rad]")
+plt.legend()
+plt.grid(True)
+
+plt.tight_layout()
+plt.show()
