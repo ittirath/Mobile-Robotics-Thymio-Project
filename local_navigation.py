@@ -60,7 +60,8 @@ def local_nav_update(prox_horizontal):
         if left_side < THRESH_WALL_LOST:
             local_nav_log("Wall finished. Clearance.")
             current_state = "CLEARANCE"
-            timer_start = time.time()
+            # timer_start = time.time()
+            timer_start = time.perf_counter()
             return BASE_SPEED, BASE_SPEED
         error = left_side - TARGET_DIST
         correction = int(error * P_GAIN)
@@ -75,7 +76,8 @@ def local_nav_update(prox_horizontal):
         if right_side < THRESH_WALL_LOST:
             local_nav_log("Wall finished. Clearance.")
             current_state = "CLEARANCE"
-            timer_start = time.time()
+            # timer_start = time.time()
+            timer_start = time.perf_counter()
             return BASE_SPEED, BASE_SPEED
         error = right_side - TARGET_DIST
         correction = int(error * P_GAIN)
@@ -88,10 +90,11 @@ def local_nav_update(prox_horizontal):
         if max(front_all) > THRESH_ENTRY:
             current_state = f"FOLLOW_{previous_wall_side}"
             return 0, 0
-        if (time.time() - timer_start) >= CLEARANCE_DURATION:
+        if (time.perf_counter() - timer_start) >= CLEARANCE_DURATION:
+            print("time diff", time.perf_counter() - timer_start)
             local_nav_log("Realigning.")
             current_state = "REALIGN_ANGLE"
-            timer_start = time.time()
+            timer_start = time.perf_counter()
             return 0, 0
         return BASE_SPEED, BASE_SPEED
 
@@ -99,7 +102,8 @@ def local_nav_update(prox_horizontal):
     elif current_state == "REALIGN_ANGLE":
         if DEBUG_PRINT:
             print(f"[LOCAL_NAV] Realigning angle")
-        if (time.time() - timer_start) >= TURN_DURATION:
+        if (time.perf_counter() - timer_start) >= TURN_DURATION:
+            print("time turn diff", time.perf_counter() - timer_start)
             if max(front_all) > THRESH_ENTRY:
                 local_nav_log("Obstacle still present.")
                 current_state = "GLOBAL" 

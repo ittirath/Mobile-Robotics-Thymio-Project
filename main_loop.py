@@ -149,7 +149,7 @@ while True:
         print(prox_values)
 
         # Act
-        apply_motor_commands(left_speed, right_speed)
+        apply_motor_commands(right_speed, left_speed)
 
         # Exit Condition
         if current_state == "GLOBAL" and max(prox_values[:5]) < THRESH_ENTRY:
