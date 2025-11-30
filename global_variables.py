@@ -61,7 +61,7 @@ var_theta_cam = 1e-2 # variance in the heading camera measurement [rad2]
 
 # GLOBAL NAVIGATION VARIABLES ----------------------------------------
 
-scale_factor = 2.0  # 2x bigger obstacles
+scale_factor = 2.5  # 2x bigger obstacles
 
 # LOCAL NAVIGATION VARIABLES ----------------------------------------
 
@@ -92,11 +92,12 @@ eps_theta = np.pi/50 # tolerance for the robot's heading to be considered as ali
 #eps_d = 6.5e-2 # tolerance for the robot's position to be considetred as on the waypoint
 eps_d = 3.5
 
-ROTATION_SPEED = 20 # speed for rotation in place (deg/s)
-FORWARD_SPEED = 35  # speed for forward motion (cm/s)
-MAX_ROT_CMD = 30          # adjust to your Thymio (max motor command)
+ROTATION_SPEED = 50 # speed for rotation in place (deg/s)
+FORWARD_SPEED = 80  # speed for forward motion (cm/s)
+MAX_ROT_CMD = 60          # adjust to your Thymio (max motor command)
 K_ROT       = MAX_ROT_CMD / np.pi  # full speed at 180° error
 
 # OTHER GLOBAL VARIABLES ----------------------------------------
 frame_size = [77.0e-2,71.0e-2]
 wheel_spacing = 10e-2 # wheel spacing [m]
+KIDNAPPING_THRESHOLD = 15  # threshold distance [m] to detect kidnapping
