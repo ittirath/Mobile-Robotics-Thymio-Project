@@ -32,22 +32,11 @@ while True:
         thymio_start, thymio_theta, goal, polygons_real_world, homography = get_pose_from_frame(frame, only_thymio=False)
         #global_path_cam = get_global_path(thymio_start, goal, polygons_real_world, plot=False)
 
-        if thymio_start is not None or goal is not None:
-            if polygons_real_world is not None or len(polygons_real_world) != 0:  
-                thymio_start, thymio_theta = camera_to_world(frame_size, thymio_start, thymio_theta)
-                goal, _ = camera_to_world(frame_size, goal, 0)
-                for i in range(len(polygons_real_world)):
-                    for j in range(len(polygons_real_world[i])):
-                        polygon_edge, _ = camera_to_world(frame_size, polygons_real_world[i][j], 0)
-                        polygons_real_world[i][j][0] = polygon_edge[0]
-                        polygons_real_world[i][j][1] = polygon_edge[1]
-
         global_path = get_global_path(thymio_start, goal, polygons_real_world, plot=False) # set plot to True to save figure
 
 
         if global_path is not None:
-            global_path_cam = path_world_to_camera(frame_size, global_path)
-            draw_global_path(frame, homography, global_path_cam)
+            draw_global_path(frame, homography, global_path)
 
         #state = "ROTATE"        
 

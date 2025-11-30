@@ -61,7 +61,7 @@ var_theta_cam = 1e-2 # variance in the heading camera measurement [rad2]
 
 # GLOBAL NAVIGATION VARIABLES ----------------------------------------
 
-scale_factor = 2.5  # 2x bigger obstacles
+scale_factor = 4.0  # 2x bigger obstacles
 
 # LOCAL NAVIGATION VARIABLES ----------------------------------------
 

@@ -274,7 +274,7 @@ def get_objective_waypoints(start, goal, polygons):
       return np.array([[start[0], goal[0]],
                        [start[1], goal[1]]])
     
-  offset = 0.0 # dont know if we need to pu it in cm
+  offset = 10.0 # dont know if we need to pu it in cm
   #inflated_polygons = [offset_polygon(poly,offset) for poly in polygons]
   inflated_polygons = [inflate_object(poly, scale_factor) for poly in polygons]
   polygons = inflated_polygons
@@ -351,7 +351,8 @@ def get_global_path(start, goal, polygons, plot=False):
         return np.array([[start[0], goal[0]],
                          [start[1], goal[1]]])
     
-
+    # offset = 10.0 # cm
+    # inflated_polygons = [offset_polygon(poly,offset) for poly in polygons]
     inflated_polygons = [inflate_object(poly, scale_factor) for poly in polygons]
     polygons = inflated_polygons
 
@@ -384,7 +385,7 @@ def get_global_path(start, goal, polygons, plot=False):
     path_indices, dist = dijkstra(adj, start_idx, goal_idx)
     # print("Shortest distance:", dist[goal_idx])
     # print("Path indices:", path_indices)
-
+    
     # -------------------- Plot --------------------
     if(plot == True):
         plt.figure()
