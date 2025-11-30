@@ -28,6 +28,13 @@ X_camera_array = [] # vector state from camera logging over time
 X = None
 P = np.array([[var_x_cam,0,0],[0,var_y_cam,0],[0,0,var_theta_cam]])
 
+prox_values = None
+timer_start = 0
+previous_wall_side = None 
+
+# def enter_local_navigation():
+#     reset_local_state()
+#     state = "LOCAL_NAVIGATION"
 
 while True:
     current_time = time.time()
@@ -89,6 +96,13 @@ while True:
                 state = "GLOBAL_NAVIGATION"
 
             # CHECK FOR LOCAL NAVIGATION TRIGGER HERE --------------------------------------------------------------------------
+             # Check Obstacle
+            prox_values = get_prox_sensors()
+            if check_obstacle_trigger(prox_values):
+                local_nav_log("Obstacle detected! Switching to Local.")
+                # enter_local_navigation()
+                reset_local_state()
+                state = "LOCAL_NAVIGATION" 
 
     if state == "ROTATE":
     
@@ -125,9 +139,19 @@ while True:
             apply_motor_commands(v_r, v_l)
 
     elif state == "LOCAL_NAVIGATION":
-        # local nav 
-        # if no obstacle switch to GLOBAL_NAVIGATION
-        pass  
+        print("State: LOCAL NAV")
+            
+        # Logic
+        left_speed, right_speed = local_nav_update(prox_values)
+        
+        # Act
+        apply_motor_commands(left_speed, right_speed)
+
+        # Exit Condition
+        if current_state == "GLOBAL" and max(prox_values[:5]) < THRESH_ENTRY:
+            local_nav_log("Obstacle cleared. Returning to Global.")
+            stop_robot()
+            state = "GLOBAL_NAVIGATION" 
 
     if waypoints is not None and homography is not None:
         draw_global_path(frame, homography, waypoints)

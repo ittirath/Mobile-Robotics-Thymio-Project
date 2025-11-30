@@ -65,25 +65,18 @@ scale_factor = 4.0  # 2x bigger obstacles
 
 # LOCAL NAVIGATION VARIABLES ----------------------------------------
 
-# Constatns
-THRESH_ENTRY = 2000      # Threshold to enter local nav
-THRESH_WALL_LOST = 400   # Threshold for "losing" the wall
-TARGET_DIST = 2000       # Distance to the wall of the obstacle
+# Constants
+THRESH_ENTRY = 2000      
+THRESH_WALL_LOST = 400   
+TARGET_DIST = 2000       
 BASE_SPEED = 100
 P_GAIN = 0.1
 
 # Times
-CLEARANCE_DURATION = 1.5 # Time to turn the corner (step forward)
-TURN_DURATION = 1.5      # Time to turn
+CLEARANCE_DURATION = 1 
+TURN_DURATION = 1.2    
 
-# Debug flag to enable debug print
-DEBUG_PRINT = True
-
-# State variables at module level (!= main_loop)
-current_state = "GLOBAL"
-timer_start = 0
-previous_wall_side = None 
-
+DEBUG_PRINT = False
 
 # MOTION CONTROL VARIABLES ----------------------------------------
 N = 100
