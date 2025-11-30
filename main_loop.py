@@ -65,14 +65,14 @@ while True:
         if thymio_start is not None and thymio_theta is not None:
             # UPDATE KALMAN FILTER HERE --------------------------------------------------------------------------
             v_r_motor, v_l_motor = get_motor_speeds()
-            # X, P = update_EKF(thymio_start, thymio_theta, v_r_motor, v_l_motor, X, P, frame)
-            print(f"Kalman pose: x={X[0]:.3f} m, y={X[1]:.3f} m, theta={X[2]:.3f} rad")  # debug
+            X, P = update_EKF(thymio_start, thymio_theta, v_r_motor, v_l_motor, X, P, frame)
+            #print(f"Kalman pose: x={X[0]:.3f} m, y={X[1]:.3f} m, theta={X[2]:.3f} rad")  # debug
 
             X_array.append(X.copy()) # copy to avoid corruption
             # Debug: override kalman with camera measurement
-            X[0] = thymio_start[0]
-            X[1] = thymio_start[1]
-            X[2] = thymio_theta
+            # X[0] = thymio_start[0]
+            # X[1] = thymio_start[1]
+            # X[2] = thymio_theta
             X_camera_array.append(np.array([thymio_start[0], thymio_start[1], thymio_theta]))
             
             
@@ -111,7 +111,7 @@ while True:
         y_diff = waypoints[1,waypoint_index] - X[1]
         dist_to_waypoint = np.linalg.norm([x_diff, y_diff])
 
-        print(f"Distance to waypoint: {dist_to_waypoint:.3f} m") # debug
+        #print(f"Distance to waypoint: {dist_to_waypoint:.3f} m") # debug
 
         if dist_to_waypoint < eps_d:
             apply_motor_commands(0,0)
