@@ -29,9 +29,16 @@ X = None
 P = np.array([[var_x_cam,0,0],[0,var_y_cam,0],[0,0,var_theta_cam]])
 prox_values = np.array([0,0,0,0,0,0,0])
 
-# def enter_local_navigation():
-#     reset_local_state()
-#     state = "LOCAL_NAVIGATION"
+local_nav = LocalNav(
+    turn_direction="",
+    state_local_nav="",
+    turn_margin_counter=0,
+    turn_counter=0,
+    advance_counter=0,
+    obstacle_cleared=False,
+    realign_done=False,
+)
+
 
 while True:
     current_time = time.time()
@@ -40,7 +47,6 @@ while True:
         print("Frame not received")
         break
         
-    # CHECK FOR LOCAL NAVIGATION TRIGGER HERE --------------------------------------------------------------------------
     prox_values = get_prox_sensors()
     
     if state == "GLOBAL_NAVIGATION":
@@ -97,9 +103,7 @@ while True:
 
     if state == "ROTATE":
         if check_obstacle_trigger(prox_values):
-            local_nav_log("Obstacle detected! Switching to Local.")
-            # enter_local_navigation()
-            reset_local_state()
+            reset_local_nav(local_nav)
             state = "LOCAL_NAVIGATION"
             
         theta_des = np.arctan2(waypoints[1, waypoint_index]-X[1], waypoints[0, waypoint_index]-X[0])
@@ -116,11 +120,8 @@ while True:
             apply_motor_commands(ROTATION_SPEED, -ROTATION_SPEED)
 
     elif state == "FORWARD":
-        # CHECK FOR LOCAL NAVIGATION TRIGGER HERE --------------------------------------------------------------------------
         if check_obstacle_trigger(prox_values):
-            local_nav_log("Obstacle detected! Switching to Local.")
-            # enter_local_navigation()
-            reset_local_state()
+            reset_local_nav(local_nav)
             state = "LOCAL_NAVIGATION"
         
         x_diff = waypoints[0,waypoint_index] - X[0]
@@ -141,20 +142,12 @@ while True:
             apply_motor_commands(v_r, v_l)
 
     elif state == "LOCAL_NAVIGATION":
-        print("State: LOCAL NAV")
+        right_speed,left_speed = local_nav_FSM(local_nav, prox_values)
+        print("local nav state:",local_nav.state_local_nav)
+        apply_motor_commands(right_speed,left_speed)
 
-        # Logic
-        left_speed, right_speed = local_nav_update(prox_values)
-        print(left_speed, right_speed)
-        print(prox_values)
-
-        # Act
-        apply_motor_commands(right_speed, left_speed)
-
-        # Exit Condition
-        if current_state == "GLOBAL" and max(prox_values[:5]) < THRESH_ENTRY:
-            
-            local_nav_log("Obstacle cleared. Returning to Global.")
+        if (local_nav.obstacle_cleared and local_nav.realign_done):
+            print("Obstacle cleared and Thymio realigned. Returning to Global.")
             stop_Thymio()
             state = "GLOBAL_NAVIGATION"
 

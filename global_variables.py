@@ -54,9 +54,9 @@ threshold = 11 # cutoff of the Mahalanobis distance for measurement outlier reje
 var_v_l = 1 # variance in the left wheel linear speed measurements [cm2/s2]
 var_v_r = 1 # variance in the right wheel linear speed measurements [cm2/s2]
 
-var_x_cam = 0.01 # variance in the x coordinate camera measurement [cm2]
-var_y_cam = 0.01 # variance in the y coordinate camera measurement [cm2]
-var_theta_cam = 1e-2 # variance in the heading camera measurement [rad2]
+var_x_cam = 0.005 # variance in the x coordinate camera measurement [cm2]
+var_y_cam = 0.005 # variance in the y coordinate camera measurement [cm2]
+var_theta_cam = 0.005 # variance in the heading camera measurement [rad2]
 
 
 # GLOBAL NAVIGATION VARIABLES ----------------------------------------
@@ -65,35 +65,22 @@ scale_factor = 4.0  # 2x bigger obstacles
 
 # LOCAL NAVIGATION VARIABLES ----------------------------------------
 
-# Constants
-THRESH_ENTRY = 2000      
-THRESH_WALL_LOST = 400   
-TARGET_DIST = 2000       
 BASE_SPEED = 100
-P_GAIN = 0.05
-
-# Times
-CLEARANCE_DURATION = 1 
-TURN_DURATION = 1.2    
-
-DEBUG_PRINT = True
-
-current_state = "GLOBAL"
-prox_values = None
-timer_start = 0
-previous_wall_side = None
-
+THRESH_ENTRY = 2000
+FIVE_CM = 15 # number of iterations to advance 5 cm for BASE_SPEED 100 dt = 0.1
+NINETY_DEGREES = 35 # number of iterations to turn 90 degrees for BASE_SPEED 100 dt = 0.1
+#MARGIN = 1  # uncomment if margin is used
 
 # MOTION CONTROL VARIABLES ----------------------------------------
 N = 100
 forward_speed = 2e-2
 eps_theta = np.pi/50 # tolerance for the robot's heading to be considered as aligned with the waypoint
 #eps_d = 6.5e-2 # tolerance for the robot's position to be considetred as on the waypoint
-eps_d = 3.5
+eps_d = 4.5
 
 ROTATION_SPEED = 50 # speed for rotation in place (deg/s)
 FORWARD_SPEED = 80  # speed for forward motion (cm/s)
-MAX_ROT_CMD = 60          # adjust to your Thymio (max motor command)
+MAX_ROT_CMD = 70          # adjust to your Thymio (max motor command)
 K_ROT       = MAX_ROT_CMD / np.pi  # full speed at 180° error
 
 # OTHER GLOBAL VARIABLES ----------------------------------------
