@@ -47,7 +47,7 @@ detector_params = cv2.aruco.DetectorParameters()
 
 # KALMAN FILTER VARIABLES ----------------------------------------
 
-dt = 0.1 # time between EKF calls [s]
+dt = 0.3 # time between EKF calls [s]
 alpha = 0 # linear gain in uncertainty
 threshold = 11 # cutoff of the Mahalanobis distance for measurement outlier rejection
 
@@ -66,9 +66,9 @@ scale_factor = 4.0  # 2x bigger obstacles
 # LOCAL NAVIGATION VARIABLES ----------------------------------------
 
 BASE_SPEED = 100
-THRESH_ENTRY = 2000
-FIVE_CM = 15 # number of iterations to advance 5 cm for BASE_SPEED 100 dt = 0.1
-NINETY_DEGREES = 35 # number of iterations to turn 90 degrees for BASE_SPEED 100 dt = 0.1
+THRESH_ENTRY = 1000
+FIVE_CM = 5 # number of iterations to advance 5 cm for BASE_SPEED 100 dt = 0.1
+NINETY_DEGREES = 12 # number of iterations to turn 90 degrees for BASE_SPEED 100 dt = 0.1
 #MARGIN = 1  # uncomment if margin is used
 
 # MOTION CONTROL VARIABLES ----------------------------------------

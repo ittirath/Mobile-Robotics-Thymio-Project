@@ -72,7 +72,7 @@ def correct_estimation(X_estim,P_estim,Z_meas):
 
   # compute Mahalanobis distance and abort correction step if the measurement is rejected
   if Y.T @ S_inv @ Y > threshold:
-    print(f"Mahalanobis distance: {Y.T @ S_inv @ Y:.3f} Y {Y}")  # debug
+    #print(f"Mahalanobis distance: {Y.T @ S_inv @ Y:.3f} Y {Y}")  # debug
     return X_estim, P_estim
 
   K = P_estim @ S_inv
